@@ -10,25 +10,34 @@
 		<!-- topBars end -->
 
 		<!-- main start -->
-		<swiper :indicator-dots="false" :autoplay="false" :duration="1000" @change="onChangeTap" :current="topBarIndex"
+		<swiper  :indicator-dots="false" :autoplay="false" :duration="1000" @change="onChangeTap" :current="topBarIndex"
 			:style="'height:'+mainContentHeight+'px;'">
 
 			<swiper-item v-for="(item,index) in remoteTopBar" :key='index'>
+				
+				<scroll-view class="" scroll-y="true" :style="'height:'+mainContentHeight+'px;'">
+					<block v-if="item.data.length>0">
+						<block v-for="(i,k) in item.data" :key='k'>
+							<IndexSwipper v-if="i.type ==='swiperList'" :dataList="i.data"></IndexSwipper>
+						
+							<template v-if="i.type ==='recommendList'">
+								<Recommend :dataList="i.data"></Recommend>
+								<Card cardTitle="猜你喜欢"></Card>
+							</template>
+							<CommodityList v-if="i.type ==='commodityList'" :dataList="i.data"></CommodityList>
+							<!-- 	<Banner></Banner> -->
+							<!-- <Hot></Hot>	 -->
+						</block>
+					</block>
+					<view v-else>
+						<text>暂无数据...</text>
+					</view>
+				</scroll-view>
 
 				<!-- main-content用于获取页面高度值 -->
-				<view class="swiper-item main-content">
-					<block v-for="(i,k) in item.data" :key='k'>
-						<IndexSwipper v-if="i.type ==='swiperList'" :dataList="i.data"></IndexSwipper>
-						
-						<template v-if="i.type ==='recommendList'">
-							<Recommend  :dataList="i.data"></Recommend>
-							<Card cardTitle="猜你喜欢"></Card>
-						</template>
-						<CommodityList v-if="i.type ==='commodityList'" :dataList="i.data"></CommodityList>
-					<!-- 	<Banner></Banner> -->
-						<!-- <Hot></Hot>	 -->	
-					</block>
-				</view>
+				<!-- <view class="swiper-item main-content"> -->
+				<!-- </view> -->
+
 			</swiper-item>
 		</swiper>
 		<!-- main end -->
@@ -40,7 +49,7 @@
 
 <script>
 	import IndexSwipper from '@/components/index/IndexSwiper/IndexSwiper.vue'
-	import Recommend from '@/components/index/Recommend/Recommend.vue';
+	import Recommend from '@/components/index/Recommend/Recommend.vue'
 	import Card from '@/components/common/Card/Card.vue'
 	import CommodityList from '@/components/common/CommodityList/CommodityList.vue'
 	import Banner from '@/components/index/Banner/Banner.vue'
@@ -77,11 +86,15 @@
 		},
 		onReady() {
 
-			// console.log(uni.getSystemInfoSync({
-			// 	success: function(res) {
-			// 		console.log(JSON.stringify(res))
-			// 	}
-			// }))
+			uni.getSystemInfo({
+				success: (res) => {
+					console.log(res)
+					this.mainContentHeight = res.windowHeight - uni.upx2px(80) - this.getClientHeight()
+					console.log(res.statusBarHeight)
+				}
+			})
+			
+			//计算高度（有问题）
 			// let view = uni.createSelectorQuery().select('.main-content')
 			// //console.log(view)
 			// view.boundingClientRect(data => {
@@ -93,17 +106,17 @@
 		},
 
 		methods: {
+			//请求首页数据
 			__init() {
 				uni.request({
 					url: "http://127.0.0.1:3000/api/index_list/data",
 					success: (res) => {
-						//console.log(res.data.data.topBar)
 						this.topBar = res.data.data.topBar
 						this.remoteTopBar = this.initData(res.data.data)
-						//console.log(JSON.stringify(this.initData(res.data.data)))
 					}
 				})
 			},
+			//添加数据
 			initData(res) {
 
 				let arr = [];
@@ -119,10 +132,9 @@
 					}
 					arr.push(obj)
 				}
-				console.log(arr)
 				return arr;
 			},
-			//topBar发生改变
+			//点击顶栏
 			changeTap(index) {
 				if (this.topBarIndex === index) {
 					return
@@ -130,10 +142,32 @@
 				this.scrollIntoIndex = 'top' + index
 				this.topBarIndex = index
 			},
+			//对应滑动
 			onChangeTap(e) {
-				//console.log(e.detail.current)
 				this.changeTap(e.detail.current)
 
+			},
+			//获取可视区域高度【兼容】
+			getClientHeight(){
+				const res = uni.getSystemInfoSync()
+				//console.log(res.statusBarHeight)
+				//写法1
+				const system = res.platform
+				if(system === 'ios'){
+					return 44 + res.statusBarHeight
+				}else if(system ==='andriod'){
+					return 48 + res.statusBarHeight
+				}else{
+					return 0;
+				}
+				//写法2
+				
+					//微信
+				// #ifdef MP-WEIXIN
+				
+				// #endif
+				
+				
 			}
 		}
 	}
@@ -159,4 +193,8 @@
 	}
 
 	.swiper-item {}
+	
+	.demo1{
+		background: skyblue;
+	}
 </style>
